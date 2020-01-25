@@ -110,7 +110,7 @@ class mainWindow(Frame):
         for filess in dir.getFilesByOrder(order):
             if hidden == 0 and filess.hidden == 1:
                 continue
-            Label(self.mainCanvas,text=str(filess.name),font="Helvetica 10",bg="grey55",width=100).grid(row=j,column=0,sticky=W+N)
+            Button(self.mainCanvas,text=str(filess.name),font="Helvetica 10",bg="grey55",width=100,command = (lambda f=filess: f.execute())).grid(row=j,column=0,sticky=W+N)
             Label(self.mainCanvas,text=str(filess.size),font="Helvetica 12").grid(row=j,column=1,sticky=N)
             Label(self.mainCanvas,text=str(filess.mask),font="Helvetica 12").grid(row=j,column=2,sticky=N)
             Label(self.mainCanvas,text=str(filess.lastModified),font="Helvetica 12").grid(row=j,column=3,sticky=N)
