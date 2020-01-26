@@ -2,6 +2,7 @@ import directory
 import popularityHeap as ph
 import time
 from Tkinter import *
+import os
 
 class mainWindow(Frame):
 
@@ -71,14 +72,16 @@ class mainWindow(Frame):
         self.mainDirName.grid(sticky=E+N+W+S)
 
         Button(self.mainDirName,text="<",font="Helvetica 14",command = (lambda dir=dir: self.changeMainCanvas(dir.getParentDir(),hidden,order))).grid(row=0,column=0,sticky=W)
-        Label(self.mainDirName,text=dir.path,font="Helvetica 14").grid(row=0,column=1,sticky=W)
+        Label(self.mainDirName,text=dir.path,font="Helvetica 14",width=63).grid(row=0,column=1,sticky=W)
 
         if hidden == 0:
-            Button(self.mainDirName,text="Show hidden",font="Helvetica",bg='#fafafa',command = (lambda dir=dir: self.changeMainCanvas(dir,1,order))).grid(row=0,column=2,sticky=E,padx=(80,0))
+            Button(self.mainDirName,text="Show hidden",font="Helvetica",bg='red',command = (lambda dir=dir: self.changeMainCanvas(dir,1,order))).grid(row=0,column=2,sticky=E,pady=(5,1))
         if hidden == 1:
-            Button(self.mainDirName,text="Hide hidden",font="Helvetica",bg='#fafafa',command = (lambda dir=dir: self.changeMainCanvas(dir,0,order))).grid(row=0,column=2,sticky=E,padx=(80,0))
+            Button(self.mainDirName,text="Hide hidden",font="Helvetica",bg='red',command = (lambda dir=dir: self.changeMainCanvas(dir,0,order))).grid(row=0,column=2,sticky=E,pady=(5,1))
 
-        Entry(self.mainDirName).grid(row=0,column=3,sticky=W+N,padx=(600,0),pady=(6,0))
+        Button(self.mainDirName,text="Add file",font="Helvetica",bg='red',command = (lambda dir=dir: self.createNewFile(dir))).grid(row=0,column=3,sticky=W+N,pady=(5,1))
+        Button(self.mainDirName,text="Add folder",font="Helvetica",bg='red',command = (lambda dir=dir: self.createDir(dir))).grid(row=0,column=4,sticky=W+N,pady=(5,1))
+        Entry(self.mainDirName).grid(row=0,column=5,sticky=W+N,padx=(6,0),pady=(5,0))
 
 
         self.mainCanvas = Frame(self.RightFrame)
@@ -96,7 +99,10 @@ class mainWindow(Frame):
         for direc in dir.getDirsByOrder(order):
             if hidden == 0 and direc.hidden == 1:
                 continue
-            Button(self.mainCanvas,text=str(direc.name),font="Helvetica 10",bg="red",width=100,command=(lambda direc=direc: self.changeMainCanvas(direc,hidden,order))).grid(row=j,column=0,sticky=W+N)
+            b = Button(self.mainCanvas,text=str(direc.name),font="Helvetica 10",bg="red",width=100,command=(lambda direc=direc: self.changeMainCanvas(direc,hidden,order)))
+            b.grid(row=j,column=0,sticky=W+N)
+            b.bind('<Button-3>',self.onRightClick)
+
             Label(self.mainCanvas,text=str(direc.size),font="Helvetica 12").grid(row=j,column=1,sticky=N)
             Label(self.mainCanvas,text=str(direc.mask),font="Helvetica 12").grid(row=j,column=2,sticky=N)
             Label(self.mainCanvas,text=str(direc.lastModified),font="Helvetica 12").grid(row=j,column=3,sticky=N)
@@ -106,6 +112,8 @@ class mainWindow(Frame):
             if(j>14):
                 break
 
+        if dir.emptyDir():
+            Label(self.mainCanvas,text="    ",font="Helvetica 10",width=100).grid(row=1,column=0,sticky=W+N)
 
         for filess in dir.getFilesByOrder(order):
             if hidden == 0 and filess.hidden == 1:
@@ -200,6 +208,74 @@ class mainWindow(Frame):
     def updatePopularity(self,ndir):
         self.popularityHeap,updatedNode = ph.increasePopularity(self.popularityHeap,ndir)
         self.popularityHeap = ph.updateHeap(self.popularityHeap,updatedNode)
+
+    def newFolder(self,dir,e,top,f):
+        if f == 1:
+            dir.createFile(e.get())
+        else:
+            dir.createDirectory(e.get())
+        top.destroy()
+        self.changeMainCanvas(dir,0,0)
+
+    def access(self,pardir):
+        if(os.access(pardir.path,os.W_OK) == False):
+            top = Toplevel()
+            top.title("Permission denied")
+            top.geometry('240x210+690+350')
+            l = Label(top,text="Permission denied\n for writing in\n this directory",font="Helvetica")
+            l.pack()
+            return 1
+        return 0
+
+    def createDir(self,pardir):
+        if self.access(pardir) == 1:
+            return
+        top = Toplevel()
+        top.title("Add new folder")
+        top.geometry('240x210+690+350')
+        l = Label(top,text="Enter the name:",font="Helvetica 18")
+        l.pack(ipady=2)
+        l3 = Label(top)
+        l3.pack(ipady=9)
+        e = Entry(top)
+        e.pack(ipady=9)
+        e.focus_set()
+        l2 = Label(top)
+        l2.pack(ipady=18)
+        b = Button(top,text="ADD FOLDER",font="Helvetica 10",command = (lambda pd=pardir: self.newFolder(pd,e,top,0)))
+        b.pack()
+
+    def createNewFile(self,pardir):
+        if self.access(pardir) == 1:
+            return
+        top = Toplevel()
+        top.title("Create new file")
+        top.geometry('240x210+690+350')
+        l = Label(top,text="Enter the file name:",font="Helvetica 18")
+        l.pack(ipady=2)
+        l3 = Label(top)
+        l3.pack(ipady=9)
+        e = Entry(top)
+        e.pack(ipady=9)
+        e.focus_set()
+        l2 = Label(top)
+        l2.pack(ipady=18)
+        b = Button(top,text="ADD FILE",font="Helvetica 10",command = (lambda pd=pardir: self.newFolder(pd,e,top,1)))
+        b.pack()
+
+    def onRightClick(self,event):
+        top = Toplevel()
+        top.geometry('260x220+700+350')
+        popUp = Button(top,text="Open")
+        popUp.pack()
+        popUp2 = Button(top,text="Move to")
+        popUp2.pack()
+        popUp3 = Button(top,text="Copy to")
+        popUp3.pack()
+        popUp4 = Button(top,text="Preferences")
+        popUp4.pack()
+        popUp5 = Button(top,text="Delete")
+        popUp5.pack()
 
 if __name__ == "__main__":
     d = mainWindow()

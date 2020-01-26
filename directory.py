@@ -28,6 +28,14 @@ class directory:
         else:
             self.directories[self.path+'/'+dir] = directory(self.path+'/'+dir,dir,self,hid)
 
+    def createDirectory(self,name):
+        os.mkdir(self.path+'/'+name)
+        self.addDirectory(name,0)
+
+    def createFile(self,name):
+        open(self.path+'/'+name,'a').close()
+        self.addFile(name,0)
+        
     def enlistContents(self):
         if(os.access(self.path,os.R_OK)):
             cd = os.listdir(self.path)
@@ -51,6 +59,14 @@ class directory:
         self.size = float(self.size)
         if self.parent !=None:
             self.parent.directories[self.path] = self
+
+    def emptyDir(self):
+        if len(self.directories) == 0:
+            return True
+        for i in self.directories.values():
+            if i.hidden == 0:
+                return False
+        return True
 
     def getNumOfDirectories(self):
         return len(self.directories)

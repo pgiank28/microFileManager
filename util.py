@@ -28,19 +28,6 @@ revMonths = {
     "Dec": '12'
 }
 
-fileTypes = {
-    'bin':'Binary',
-    'pdf':'Document',
-    'docx':'Document',
-    'odt':'Document',
-    'txt':'Text file',
-    'mp4':'Media',
-    'png':'Photo',
-    'py':'Program',
-    'java':'Program',
-    'json':'Archive',
-    'zip':'Compressed file'
-}
 def getPrivileges(num):
     priv = bin(num)
     humanPriv = [int(priv[-9:-6],2),int(priv[-6:-3],2),int(priv[-3:],2)]
