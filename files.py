@@ -30,3 +30,9 @@ class files:
     def execute(self):
         args = ('/usr/bin/xdg-open',self.path)
         popen = subprocess.Popen(args, stdout=subprocess.PIPE)
+
+    def access(self):
+        if(os.access(self.path,os.W_OK)):
+            return 1
+        else:
+            return 0

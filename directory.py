@@ -2,6 +2,7 @@ from __future__ import division
 import os
 import files
 import util
+import shutil
 
 class directory:
 
@@ -28,6 +29,14 @@ class directory:
         else:
             self.directories[self.path+'/'+dir] = directory(self.path+'/'+dir,dir,self,hid)
 
+    def addDirectoryFromExternal(self,mc,dir,hid):
+        if(os.access(self.path,os.W_OK)):
+            self.addDirectory(dir,hid)
+            if mc == 'MOVE':
+                shutil.move(dir.path,self.path)
+            if mc == 'COPY':
+                shutil.copytree(dir.path,self.path)
+
     def createDirectory(self,name):
         os.mkdir(self.path+'/'+name)
         self.addDirectory(name,0)
@@ -35,7 +44,13 @@ class directory:
     def createFile(self,name):
         open(self.path+'/'+name,'a').close()
         self.addFile(name,0)
-        
+
+    def deleteDirectory(self,dir):
+        del self.directories[dir.path]
+
+    def deleteFile(self,name):
+        del self.files[name]
+
     def enlistContents(self):
         if(os.access(self.path,os.R_OK)):
             cd = os.listdir(self.path)

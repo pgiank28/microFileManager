@@ -3,6 +3,7 @@ import popularityHeap as ph
 import time
 from Tkinter import *
 import os
+import shutil
 
 class mainWindow(Frame):
 
@@ -101,7 +102,7 @@ class mainWindow(Frame):
                 continue
             b = Button(self.mainCanvas,text=str(direc.name),font="Helvetica 10",bg="red",width=100,command=(lambda direc=direc: self.changeMainCanvas(direc,hidden,order)))
             b.grid(row=j,column=0,sticky=W+N)
-            b.bind('<Button-3>',self.onRightClick)
+            b.bind('<Button-3>',lambda event,direc=direc: self.onRightClick(event,direc))
 
             Label(self.mainCanvas,text=str(direc.size),font="Helvetica 12").grid(row=j,column=1,sticky=N)
             Label(self.mainCanvas,text=str(direc.mask),font="Helvetica 12").grid(row=j,column=2,sticky=N)
@@ -118,7 +119,10 @@ class mainWindow(Frame):
         for filess in dir.getFilesByOrder(order):
             if hidden == 0 and filess.hidden == 1:
                 continue
-            Button(self.mainCanvas,text=str(filess.name),font="Helvetica 10",bg="grey55",width=100,command = (lambda f=filess: f.execute())).grid(row=j,column=0,sticky=W+N)
+            bf = Button(self.mainCanvas,text=str(filess.name),font="Helvetica 10",bg="grey55",width=100,command = (lambda f=filess: f.execute()))
+            bf.grid(row=j,column=0,sticky=W+N)
+            bf.bind('<Button-3>',lambda event,f=filess: self.onRightClickFile(event,f,dir))
+
             Label(self.mainCanvas,text=str(filess.size),font="Helvetica 12").grid(row=j,column=1,sticky=N)
             Label(self.mainCanvas,text=str(filess.mask),font="Helvetica 12").grid(row=j,column=2,sticky=N)
             Label(self.mainCanvas,text=str(filess.lastModified),font="Helvetica 12").grid(row=j,column=3,sticky=N)
@@ -263,19 +267,130 @@ class mainWindow(Frame):
         b = Button(top,text="ADD FILE",font="Helvetica 10",command = (lambda pd=pardir: self.newFolder(pd,e,top,1)))
         b.pack()
 
-    def onRightClick(self,event):
+        #Right click on main window handling .
+        #
+        #
+    def onRightClick(self,event,dir):
         top = Toplevel()
-        top.geometry('260x220+700+350')
-        popUp = Button(top,text="Open")
-        popUp.pack()
-        popUp2 = Button(top,text="Move to")
-        popUp2.pack()
-        popUp3 = Button(top,text="Copy to")
-        popUp3.pack()
-        popUp4 = Button(top,text="Preferences")
-        popUp4.pack()
-        popUp5 = Button(top,text="Delete")
-        popUp5.pack()
+        top.geometry('140x150+'+str(event.x_root)+'+'+str(event.y_root))
+        top.protocol("WM_DELETE_WINDOW",lambda event=event: self.on_closing(event,top))
+        popUp = Button(top,text="OPEN",bg='#000000',fg='#f7f7f3',command = (lambda dir=dir: self.on_open(dir,top)))
+        popUp.pack(ipadx=100)
+        popUp2 = Button(top,text="MOVE TO",bg='#000000',fg='#f7f7f3',command = (lambda dir=dir: self.move_or_copy("move",dir)))
+        popUp2.pack(ipadx=100)
+        popUp3 = Button(top,text="COPY TO",bg='#000000',fg='#f7f7f3')
+        popUp3.pack(ipadx=100)
+        popUp4 = Button(top,text="PREFERENCES",bg='#000000',fg='#f7f7f3')
+        popUp4.pack(ipadx=100)
+        popUp5 = Button(top,text="TO TRASH",bg='#000000',fg='#f7f7f3',command = (lambda dir=dir: self.on_delete(dir,event,top)))
+        popUp5.pack(ipadx=100)
+        event.widget.config(bg='#f0a0e0')
+
+    def onRightClickFile(self,event,fl,dir):
+        top = Toplevel()
+        top.geometry('140x150+'+str(event.x_root)+'+'+str(event.y_root))
+        top.protocol("WM_DELETE_WINDOW",lambda ev=event: self.on_closing_file(ev,top))
+        popUp = Button(top,text="OPEN",bg='#000000',fg='#f7f7f3',command = (lambda dir=dir: self.on_open_file(fl,event,top)))
+        popUp.pack(ipadx=100)
+        popUp2 = Button(top,text="MOVE TO",bg='#000000',fg='#f7f7f3',command = (lambda dir=dir: self.move_or_copy("move",dir)))
+        popUp2.pack(ipadx=100)
+        popUp3 = Button(top,text="COPY TO",bg='#000000',fg='#f7f7f3')
+        popUp3.pack(ipadx=100)
+        popUp4 = Button(top,text="PREFERENCES",bg='#000000',fg='#f7f7f3')
+        popUp4.pack(ipadx=100)
+        popUp5 = Button(top,text="TO TRASH",bg='#000000',fg='#f7f7f3',command = (lambda dir=dir: self.on_delete_file(dir,fl,event,top)))
+        popUp5.pack(ipadx=100)
+        event.widget.config(bg='#40a0e0')
+
+
+
+    def on_closing(self,e,top):
+        e.widget.config(bg='red')
+        top.destroy()
+
+    def on_closing_file(self,e,top):
+        e.widget.config(bg='grey55')
+        top.destroy()
+
+    def on_open(self,dir,top):
+        self.changeMainCanvas(dir,0,0)
+        top.destroy()
+
+    def on_open_file(self,fl,e,top):
+        fl.execute()
+        self.on_closing_file(e,top)
+
+    def on_move(self,top):
+        self.move_or_copy()
+
+    def move_or_copy(self,mc,dir):
+        top = Toplevel()
+        top.geometry('580x525+100+100')
+        top.title("Select "+mc+" destination")
+
+        l1 = Label(top,text='/',font = "Helvetica 16")
+        l1.pack()
+        for i in self.root.directories.values():
+            l = Button(top,text=i.path,command = (lambda destination=i:self.next_dir(mc,dir,destination,top)))
+            l.config(width=100)
+            l.pack(side = TOP,padx = 1)
+
+
+    def next_dir(self,mc,dir,destination,top):
+        top.destroy()
+        top = Toplevel()
+        top.geometry('580x525+100+100')
+        top.title("Select "+mc+" destination")
+        l1 = Label(top,text=dir.path,font = "Helvetica 16")
+        l1.pack()
+        b1 = Button(top,text=mc+" here",command=destination.addDirectoryFromExternal(mc,dir,0))
+        for i in destination.directories.values():
+            l = Button(top,text=i.path,command = (lambda dest=i:self.next_dir(mc,dir,dest,top)))
+            l.config(width=100)
+            l.pack(side = TOP,padx = 1)
+
+    def on_delete(self,dir,event,topper):
+        top = Toplevel()
+        top.geometry('140x150+'+str(event.x_root)+'+'+str(event.y_root))
+        top.protocol("WM_DELETE_WINDOW",lambda e=event,t=top: self.on_closing(e,t))
+        top.title('Delete option')
+        l =Label(top,text="Are you sure?",font="Helvetica 16")
+        l.pack(padx=2,pady=2)
+        b = Button(top,text="YES",font="Helvetica 12",command = (lambda e=event,d=dir,t=top,t2=topper: self.deleteDir(e,d,t,t2)))
+        b.pack()
+        b2 = Button(top,text="NO",font="Helvetica 12",command = (lambda e=event,t=top: self.on_closing(e,t)))
+        b2.pack()
+
+    def deleteDir(self,ev,dir,t1,t2):
+        if self.access(dir) == 1:
+            return
+        shutil.rmtree(dir.path)
+        self.on_closing(ev,t2)
+        self.on_closing(ev,t1)
+        dir.parent.deleteDirectory(dir)
+        self.changeMainCanvas(dir.parent,0,0)
+
+    def on_delete_file(self,dir,fl,event,topper):
+        top = Toplevel()
+        top.geometry('140x150+'+str(event.x_root)+'+'+str(event.y_root))
+        top.protocol("WM_DELETE_WINDOW",lambda e=event,t=top: self.on_closing(e,t))
+        top.title('Delete option')
+        l =Label(top,text="Are you sure?",font="Helvetica 16")
+        l.pack(padx=2,pady=2)
+        b = Button(top,text="YES",font="Helvetica 12",command = (lambda e=event,d=dir,t=top,t2=topper,f=fl: self.deleteFile(e,d,t,t2,f)))
+        b.pack()
+        b2 = Button(top,text="NO",font="Helvetica 12",command = (lambda e=event,t=top: self.on_closing(e,t)))
+        b2.pack()
+
+    def deleteFile(self,ev,dir,t1,t2,fil):
+        if fil.access() == 0:
+            print "access denied"
+            return
+        os.remove(fil.path)
+        self.on_closing_file(ev,t2)
+        self.on_closing_file(ev,t1)
+        dir.deleteFile(fil.name)
+        self.changeMainCanvas(dir,0,0)
 
 if __name__ == "__main__":
     d = mainWindow()

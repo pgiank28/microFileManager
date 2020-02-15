@@ -47,3 +47,9 @@ def increasePopularity(pheap,dir):
     if k+1==len(pheap):
         pheap.append((dir,0))
     return pheap,k+1
+
+AIzaSyCgEhx3B3agfikeJEHdsCkk2yWzUmZP_XY
+
+292309184354-j10e7u0jf3tuh38p2o0vtvr50lpkqgo8.apps.googleusercontent.com #client id
+
+VXuJCoOc9o3behBynQcgXuQX #secret
